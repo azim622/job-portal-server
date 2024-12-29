@@ -82,7 +82,7 @@ async function run() {
       })
       .send({success: true})
     })
-
+  
     app.post('/logOut', (req , res)=>{
       res.clearCookie('token',{
         httpOnly: true,
@@ -98,13 +98,33 @@ async function run() {
 
   //  all jobs
     app.get('/jobs',  async(req , res)=>{
-      console.log('now inside the logger')
       const email = req.query.email
+      const sort = req.query?.sort
+      const search = req.query?.search
+      const min = req.query?.min
+      const max = req.query?.max
       let query ={}
+      let sortQuery={}
+      console.log(req.query)
       if(email){
         query={hr_email:email}
       }
-        const cursor = jobsCollection.find(query)
+      if(sort == 'true'){
+        sortQuery ={'salaryRange': -1}
+      }
+
+      if(search){
+        query.location = { $regex: search, $options: "i" };
+      }
+
+      if(min && max){
+        query={
+          ...query,
+          "salaryRange.min":{$gte:parseInt(min)},
+          "salaryRange.max":{$lte:parseInt(max)}
+        }
+      }
+        const cursor = jobsCollection.find(query).sort(sortQuery)
         const result = await cursor.toArray()
         res.send(result)
 
